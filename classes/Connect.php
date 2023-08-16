@@ -82,6 +82,7 @@ class Connect {
     function jsonResponse($sql, $sqlParams = null, $info = null, $data = null) {
 
         if (@is_null(@$data -> tableProperty["select"]) or
+	    (!isset($this->connectInfo) && isset($data) && !isset($data->login)) or
 	    (@$this -> connectInfo['login'] and @$data -> tableProperty['select'] >= @$this -> connectInfo['login'] -> authorityLevel)) {
             $stmt = $this -> db -> prepare($sql);
             $stmt -> execute($sqlParams);
