@@ -32,7 +32,7 @@ class DataHandler {
             $this -> validPaths = array_keys($obj["paths"]);
             $this -> method = $_SERVER['REQUEST_METHOD'];
             $this -> serverKey = $obj["serverKey"];
-            $this -> login = $obj["login"];
+            if (array_key_exists('login', $obj) $this -> login = $obj["login"];
             // controlPath then get table rows
             $this -> controlPath();
             $this -> controlParams();
@@ -146,7 +146,7 @@ class DataHandler {
         // ---------------------------------------------------
         // Controll Select
         // Incoming matches valid value sets
-        if ($this -> params["select"]) {
+        if (isset($this->params) && $this -> params["select"]) {
             $selectParams = explode(",", $this -> params["select"]);
             foreach($selectParams as $selectParam) {
                 if (!in_array($selectParam, $this -> tableRows) && $selectParam) {
@@ -156,15 +156,15 @@ class DataHandler {
         }
         // ---------------------------------------------------
         // Only these values are valid
-        if (!is_numeric($this -> params["offset"]) && $this -> params["offset"]) {
+        if (isset($this->params) && !is_numeric($this -> params["offset"]) && $this -> params["offset"]) {
             $this -> errorHandler();
         }
 
-        if (!is_numeric($this -> params["limit"]) && $this -> params["limit"]) {
+        if (isset($this->params) && !is_numeric($this -> params["limit"]) && $this -> params["limit"]) {
             $this -> errorHandler();
         }
 
-        if (!is_numeric($this -> params["page"]) && $this -> params["page"]) {
+        if (isset($this->params) && !is_numeric($this -> params["page"]) && $this -> params["page"]) {
             $this -> errorHandler();
         }
 
