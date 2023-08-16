@@ -32,7 +32,7 @@ class DataHandler {
             $this -> validPaths = array_keys($obj["paths"]);
             $this -> method = $_SERVER['REQUEST_METHOD'];
             $this -> serverKey = $obj["serverKey"];
-            if (array_key_exists('login', $obj) $this -> login = $obj["login"];
+            if (array_key_exists('login', $obj)) $this -> login = $obj["login"];
             // controlPath then get table rows
             $this -> controlPath();
             $this -> controlParams();
