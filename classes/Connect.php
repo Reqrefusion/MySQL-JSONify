@@ -81,13 +81,14 @@ class Connect {
     public
     function jsonResponse($sql, $sqlParams = null, $info = null, $data = null) {
 
-        if (@is_null(@$data -> tableProperty["select"]) or(@$this -> connectInfo['login'] and@ $data -> tableProperty['select'] >= @$this -> connectInfo['login'] -> authorityLevel)) {
+        if (@is_null(@$data -> tableProperty["select"]) or
+	    (@$this -> connectInfo['login'] and @$data -> tableProperty['select'] >= @$this -> connectInfo['login'] -> authorityLevel)) {
             $stmt = $this -> db -> prepare($sql);
             $stmt -> execute($sqlParams);
             //info added page nummer, id etc.
             return json_encode(array('info' => $info, 'data' => $stmt -> fetchAll(PDO::FETCH_ASSOC), JSON_PRETTY_PRINT));
         } else {
-            $info['error'] = "Authority level not enough for see Table";
+            $info['error'] = "Authority level not enough to get answer";
             return json_encode(array('info' => $info));
         }
 
