@@ -48,22 +48,31 @@ class Connect
                     and getPOST('username') and getPOST('password')) {
                     $this->connectInfo['login'] = $data->loginJwt($this);
                     return $this->jsonResponse($sql->sql['GET'], $data->sqlParams, returnInfo($data, $sql, $this), $data);
-                } elseif ($data->params["token"]) {
+                } elseif (isset($data->params["token"])) {
                     if ($data->statementPass) {
                         $this->connectInfo['login'] = $data->loginInfo['login'];
                         $this->execute($sql->sql['POST']);
                     }
                     $this->connectInfo['login'] = $data->loginInfo['login'];
                     return $this->jsonResponse($sql->sql['GET'], $data->sqlParams, returnInfo($data, $sql, $this), $data);
-
+                } elseif ($data->external_auth) {
+                    debug('external auth, executing sql', $sql);
+                    $this->execute($sql->sql['POST']);
+                    if (isset($this->connectInfo['lastInsertId']))
+                        return $this->jsonResponse("SELECT * FROM `$data->table` WHERE $data->idCol=" . $this->connectInfo['lastInsertId']);
+                    else
+                        return $this->jsonResponse("SELECT NOW()");
                 }
                 break;
             case 'PUT':
-                $data->putParams = array_values(array_filter($data->putParams, function($v) { return !is_null($v);}));
+                $data->putParams = array_values(array_filter($data->putParams, function ($v) {
+                    return !is_null($v);
+                }));
                 $this->execute($sql->sql, $data->putParams);
-                error_log($this->connectInfo['executeStatus']);
+                // error_log($this->connectInfo['executeStatus']);
                 return $this->jsonResponse("SELECT * FROM `$data->table` WHERE $data->idCol=" . end($data->putParams));
             case 'DELETE':
+                error_log(print_r($data->sqlParams, true));
                 $this->execute($sql->sql, $data->sqlParams);
                 return $this->jsonResponse("SELECT * FROM `$data->table`");
         }
@@ -73,13 +82,21 @@ class Connect
     function execute($sql, $sqlParams = null)
     {
         try {
-            error_log('[execute] ' . $sql);
-            error_log('[execute] ' . print_r($sqlParams, true) ?? '(null)');
+            debug('[execute] ', $sql);
+            debug('[execute] ', $sqlParams);
             $stmt = $this->db->prepare($sql);
-            if ($stmt->execute($sqlParams))
-                $this->connectInfo['executeStatus'] = "Successful";
-            else
+            if ($stmt === false) {
+                debug('error on sql query', $stmt->errorInfo());
                 $this->connectInfo['executeStatus'] = $stmt->errorCode();
+            }
+            if ($stmt->execute($sqlParams)) {
+                debug($sql . ' <== SUCCESS');
+                $this->connectInfo['executeStatus'] = "Successful";
+                $this->connectInfo['lastInsertId'] = $this->db->lastInsertId();
+            } else {
+                debug('error on sql query', $stmt->errorInfo());
+                $this->connectInfo['executeStatus'] = $stmt->errorCode();
+            }
         } catch (PDOException $e) {
             $this->connectInfo['executeStatus'] = $e->getMessage();
         } catch (Exception $e) {

@@ -42,7 +42,7 @@ class SQLify
             case 'PUT':
                 return $this->putSQL($data);
             case 'DELETE':
-                return "DELETE FROM `$data->table` WHERE $data->id = :id ";
+                return $this->deleteSQL($data);
         }
     }
 
@@ -50,12 +50,21 @@ class SQLify
     public
     function putSQL($data): string
     {
-        error_log('data->posts => ' . print_r($data->posts, true));
+        // error_log('data->posts => ' . print_r($data->posts, true));
         $set = arrayKeyRemove(array_keys($data->posts), $data->idCol);
-        $set = join(', ', array_map(function($v) { return "`$v` = ?"; }, $set)).
+        $set = join(', ', array_map(function ($v) {
+                return "`$v` = ?";
+            }, $set)) .
             " WHERE $data->idCol = ?";
-        error_log('PutSQL: ' . $set);
+        // error_log('PutSQL: ' . $set);
         return "UPDATE `$data->table` SET $set";
+    }
+
+    public
+    function deleteSQL($data): string
+    {
+        debug("DELETE FROM `$data->table` WHERE $data->idCol = :", $data->idCol);
+        return "DELETE FROM `$data->table` WHERE $data->idCol = :" . $data->idCol;
     }
 
     // Create statement and return it
@@ -108,12 +117,13 @@ class SQLify
     public
     function postSQL($data): array
     {
+        debug("[sqlify POST] data->params", $data->params);
+        debug("[sqlify POST] data->posts", $data->posts);
         $params = $data->params;
         $SQLs['GET'] = $this->getSQL($data);
+        debug("SQL['GET']", $SQLs['GET']);
         if (isset($params["statement"]) and $params["statement"] === "update"
             and isset($data->posts[$data->idCol])) {
-
-
             if (array_key_exists('notUpdate', $data->tableProperty)) {
                 foreach ($data->tableProperty["notUpdate"] as $key => $value) {
                     if ($value <= $data->loginInfo['login']->authorityLevel) {
@@ -124,7 +134,6 @@ class SQLify
                 }
             }
 
-
             if (array_key_exists('ifUpdate', $data->tableProperty)) {
                 foreach ($data->tableProperty["ifUpdate"] as $key => $value) {
                     if ($value <= $data->loginInfo['login']->authorityLevel) {
@@ -134,7 +143,6 @@ class SQLify
                 }
             }
 
-
             //$SQLs['POST'] = updateOrganizer($data -> table, $data -> posts, $data -> idCol, $data -> tableProperty);
             $SQLs['POST'] = updateOrganizer($data->table, $data->posts, $data->idCol, $data->tableProperty, $data->loginInfo['login']);
         } elseif (isset($params["statement"]) and $params["statement"] === "delete"
@@ -143,14 +151,18 @@ class SQLify
                 "` WHERE " .
                 $data->idCol .
                 "=" . addStartEndSingleQuote($data->posts[$data->idCol]);
-        } elseif (isset($params["statement"]) and $params["statement"] === "insert") {
-            $SQLs['POST'] = "INSERT INTO `" . $data->table .
-                "`(" .
-                implode(",", array_flip($data->posts)) .
+        } elseif ((isset($params["statement"]) and $params["statement"] === "insert") || !isset($params["statement"])) {
+            // unset col id on insert
+            if (array_key_exists($data->idCol, $data->posts))
+                unset($data->posts[$data->idCol]);
+
+            $SQLs['POST'] = "INSERT INTO `" . $data->table . "` (" .
+                implode(",", array_keys($data->posts)) .
                 ") VALUES (" . implode(",", array_map("addStartEndSingleQuote", array_map("sqlStringEscaper", $data->posts))) .
                 ")";
         }
-
+        debug('params["statement"]', $params["statement"]);
+        debug("SQL['POST']", $SQLs['POST']);
         return $SQLs;
     }
 

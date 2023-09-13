@@ -285,3 +285,33 @@ function returnInfo($data, $sql, $connect): array
     $info["id"] = $data->idCol;
     return $info;
 }
+
+function debug(...$msg)
+{
+    $prefix = '[debug] ';
+    if (function_exists("xdebug_call_function")) {
+        $prefix = sprintf("[%s-%s:%d] ", xdebug_call_file(), xdebug_call_function(), xdebug_call_line());
+    }
+    $i = 0;
+    foreach ($msg as $s) {
+        switch (gettype($s)) {
+            case "array":
+            case "object":
+            case "resource":
+            case "unknown type":
+            case "resource (closed)":
+                error_log($prefix . '(' . gettype($s) . ') ' . print_r($s, true));
+                break;
+            case "boolean":
+                error_log($prefix. $s ? 'true' : 'false');
+                break;
+            case "NULL":
+                error_log($prefix . "(null)");
+                break;
+            default:
+                error_log($prefix . '('.gettype($s).') '. $s);
+                break;
+        }
+        $i++;
+    }
+}

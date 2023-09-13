@@ -33,6 +33,10 @@ class DataHandler
      */
     public $primaryTableRows;
     public array $sqlParams;
+    /**
+     * @var true
+     */
+    public bool $external_auth = false;
 
 
     /**
@@ -49,6 +53,8 @@ class DataHandler
         $this->serverKey = $obj["serverKey"];
         if (array_key_exists('login', $obj))
             $this->login = $obj["login"];
+        else
+            $this->external_auth = true;
         if (@$_SERVER['CONTENT_TYPE'] == 'application/json') {
             // read and decode json data
             $json = file_get_contents('php://input');
@@ -77,10 +83,15 @@ class DataHandler
                 error_log('unset id column for table ' . $this->table);
         } else
             $this->idCol = $this->primaryTableRows[0];
+        $this->validParams[] = $this->idCol;
+
         // Get the GETS in the $this->validParams
         $this->params = array_combine($this->validParams, array_map("getGet", $this->validParams));
         // Get posts, Only receives data sent
         $this->posts = array_combine($this->tableRows, array_map("getPOST", $this->tableRows));
+        if (strtolower($this->method) == 'post') {
+            debug('$this->posts', $this->posts);
+        }
 
         // Get paths based on colum names and move id last ALWAYS.
         if (strtolower($this->method) == 'put') {
@@ -96,15 +107,15 @@ class DataHandler
             }, ARRAY_FILTER_USE_BOTH);
             $this->posts = @moveIndexEnd($putParams, $this->idCol);
             $this->putParams = array_values(@moveIndexEnd($putParams, $this->idCol));
-            error_log('putParams => ' . print_r($putParams, true));
-            error_log('this->putParams, after filter, ' . $this->idCol . ' as end => ' . print_r($this->putParams, true));
-            error_log('this->posts    , after filter, ' . $this->idCol . ' as end => ' . print_r($this->posts, true));
+            debug("putParams", $putParams);
+            debug("this->putParams", $this->putParams);
+            debug("this->posts", $this->posts);
         }
 
-        $this->sqlParams = array(':id' => $this->params["id"]); //No need to escape it
+        $this->sqlParams = array(':' . $this->idCol => $this->params[$this->idCol]); //No need to escape it
 
+        debug("params", $this->params);
         if ($this->params["token"]) {
-
             try {
                 $this->loginInfo['login'] = JWT::decode($this->params["token"], $this->serverKey, array('HS256'));
 
