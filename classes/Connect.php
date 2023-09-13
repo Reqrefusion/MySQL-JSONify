@@ -57,9 +57,11 @@ class Connect
                     return $this->jsonResponse($sql->sql['GET'], $data->sqlParams, returnInfo($data, $sql, $this), $data);
 
                 }
+                break;
             case 'PUT':
+                $data->putParams = array_values(array_filter($data->putParams, function($v) { return !is_null($v);}));
                 $this->execute($sql->sql, $data->putParams);
-                error_log(print_r($data->putParams, true));
+                error_log($this->connectInfo['executeStatus']);
                 return $this->jsonResponse("SELECT * FROM `$data->table` WHERE $data->idCol=" . end($data->putParams));
             case 'DELETE':
                 $this->execute($sql->sql, $data->sqlParams);
@@ -71,9 +73,13 @@ class Connect
     function execute($sql, $sqlParams = null)
     {
         try {
+            error_log('[execute] ' . $sql);
+            error_log('[execute] ' . print_r($sqlParams, true) ?? '(null)');
             $stmt = $this->db->prepare($sql);
-            $stmt->execute($sqlParams);
-            $this->connectInfo['executeStatus'] = "Successful";
+            if ($stmt->execute($sqlParams))
+                $this->connectInfo['executeStatus'] = "Successful";
+            else
+                $this->connectInfo['executeStatus'] = $stmt->errorCode();
         } catch (PDOException $e) {
             $this->connectInfo['executeStatus'] = $e->getMessage();
         } catch (Exception $e) {
@@ -98,9 +104,14 @@ class Connect
             (!isset($this->connectInfo) && isset($data) && !isset($data->login)) or
             (@$this->connectInfo['login'] and @$data->tableProperty['select'] >= @$this->connectInfo['login']->authorityLevel)) {
             $stmt = $this->db->prepare($sql);
-            $stmt->execute($sqlParams);
+            try {
+                $stmt->execute($sqlParams);
+            } catch (PDOException $e) {
+                return json_encode(array('info' => $e->getMessage(), 'stack' => $e->getTraceAsString(), 'request' => $sql));
+            }
             //info added page number, id etc.
-            return json_encode(array('info' => $info, 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC), JSON_PRETTY_PRINT));
+            return json_encode(array('info' => $info, 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC), JSON_PRETTY_PRINT)
+            );
         } else {
             $info['error'] = "Authority level not enough to get answer";
             return json_encode(array('info' => $info));

@@ -3,23 +3,25 @@
 function moveIndexEnd($array, $key)
 {
     $newArray = $array;
-    unset($newArray[$key]);
-    $newArray[] = $array[$key];
+    if (array_key_exists($key, $newArray)) {
+        unset($newArray[$key]);
+        $newArray[$key] = $array[$key];
+    }
     return $newArray;
 }
 
 // Returns array without given $key, array_values for re-index array
 function arrayKeyRemove($arr, $key): array
 {
-    return array_values(array_filter($arr, function ($k) use ($key) {
+    return array_values(array_filter($arr, function ($k, $v) use ($key) {
         return $k != $key;
-    }, ARRAY_FILTER_USE_KEY));
+    }, ARRAY_FILTER_USE_BOTH));
 }
 
 // The function returns the GET based on key.
 function getGet($key, $default = null)
 {
-    if (isset($_GET[$key])) {
+    if (array_key_exists($key, $_GET)) {
         return $_GET[$key];
     } else {
         return $default;
@@ -29,7 +31,7 @@ function getGet($key, $default = null)
 // The function returns the POST based on key.
 function getPOST($key, $default = null)
 {
-    if (isset($_POST[$key])) {
+    if (array_key_exists($key, $_POST)) {
         return $_POST[$key];
     } else {
         return $default;

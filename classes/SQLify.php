@@ -50,9 +50,11 @@ class SQLify
     public
     function putSQL($data): string
     {
-        $set = arrayKeyRemove($data->tableRows, 'id');
-        $set = implode(" = ?, ", $set) .
-            " = ? WHERE $data->idCol = ?";
+        error_log('data->posts => ' . print_r($data->posts, true));
+        $set = arrayKeyRemove(array_keys($data->posts), $data->idCol);
+        $set = join(', ', array_map(function($v) { return "`$v` = ?"; }, $set)).
+            " WHERE $data->idCol = ?";
+        error_log('PutSQL: ' . $set);
         return "UPDATE `$data->table` SET $set";
     }
 
