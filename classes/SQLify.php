@@ -157,7 +157,7 @@ class SQLify
                 unset($data->posts[$data->idCol]);
 
             $SQLs['POST'] = "INSERT INTO `" . $data->table . "` (" .
-                implode(",", array_keys($data->posts)) .
+                implode(",", arrayBackTick(array_keys($data->posts))) .
                 ") VALUES (" . implode(",", array_map("addStartEndSingleQuote", array_map("sqlStringEscaper", $data->posts))) .
                 ")";
         }

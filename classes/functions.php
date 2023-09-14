@@ -69,6 +69,13 @@ function arrayCheckIn($value, $array): bool
     return in_array(strtolower($value), array_map('strtolower', $array));
 }
 
+function arrayBackTick($arr): array
+{
+    return array_map(function ($v) {
+        return '`' . $v . '`';
+    }, $arr);
+}
+
 //To avoid injections that can be made for the query
 function sqlStringEscaper($value)
 {
@@ -125,9 +132,8 @@ function btComOperatorOrganizer($col, $searchWords, $status = 1): string
 
 }
 
-function filterClauseOrganizer($col, $comOperator, $searchWords): string
+function filterClauseOrganizer($col, $comOperator, $search): string
 {
-    $search = current($searchWords);
     switch ($comOperator) {
         case "lk"://LIKE
             return "`" . $col . "` LIKE '" . $search . "' ";
@@ -154,13 +160,13 @@ function filterClauseOrganizer($col, $comOperator, $searchWords): string
         case "gt"://greater than (number is higher than value)
             return "`" . $col . "` < '" . $search . "' ";
         case "bt"://between (number is between two comma separated values)
-            return btComOperatorOrganizer($col, $searchWords);
+            return btComOperatorOrganizer($col, $search);
         case "nbt"://not between (number is between two comma separated values)
-            return btComOperatorOrganizer($col, $searchWords, 0);
+            return btComOperatorOrganizer($col, $search, 0);
         case "in": //in (number or string is in comma separated list of values)
-            return "`" . $col . "` IN (" . implode(",", array_map("addStartEndSingleQuote", $searchWords)) . ") ";
+            return "`" . $col . "` IN (" . implode(",", array_map("addStartEndSingleQuote", $search)) . ") ";
         case "nin": //not in (number or string is in comma separated list of values)
-            return "`" . $col . "` NOT IN (" . implode(",", array_map("addStartEndSingleQuote", $searchWords)) . ") ";
+            return "`" . $col . "` NOT IN (" . implode(",", array_map("addStartEndSingleQuote", $search)) . ") ";
         case "is"://is null (field contains "NULL" value)
             return "`" . $col . "` IS NULL ";
         case "nis"://is not null (field contains "NULL" value)
@@ -175,18 +181,30 @@ function filterOrganizer($filter, $tableRows): string
     $comOperatorsArray = array("lk", "nlk", "cs", "sw", "ew", "eq", "lt", "le", "ge", "gt", "bt", "in", "is");
     $logOperatorsArray = array("AND", "OR", "||", "&&", "XOR");
     $slices = explode(";", $filter);
+    debug("filters (slices)", $slices);
     $organizeFilter = "";
 
+    // Espagne,expert_pays,like,OR,France,expert_pays,like,AND;%C3%82ne,expert_especes,like,OR;Anguille,expert_especes,like
+    $i_slice = count($slices);
     foreach ($slices as $slice) {
+        $i_slice--;
         $comOperator = "LIKE";
         $logOperator = "OR";
         $search = "";
         $parts = explode(",", $slice);
-        $comOperator = current(array_intersect($parts, $comOperatorsArray));
-        $logOperator = current(array_intersect($parts, $logOperatorsArray));
+        debug("parts", $parts);
+        $comOperators = array_intersect($parts, $comOperatorsArray);
+        $comOperator = current($comOperators);
+        $logOperators = array_intersect($parts, $logOperatorsArray);
+        $logOperator = current($logOperators);
         $colIntersect = array_intersect($parts, $tableRows);
+        debug('$comOperator', $comOperator);
+        debug('$logOperators', $logOperators);
+        debug('$colIntersect', $colIntersect);
         $comLogOperatorsColDiff = array_diff($parts, array_merge($comOperatorsArray, $logOperatorsArray, $tableRows));
+        debug('$comLogOperatorsColDiff', $comLogOperatorsColDiff);
         $searchWords = array_map("sqlStringEscaper", $comLogOperatorsColDiff);
+        debug('$searchWords', $searchWords);
 
         if (empty($colIntersect)) {
             $cols = $tableRows;
@@ -194,24 +212,38 @@ function filterOrganizer($filter, $tableRows): string
             $cols = $colIntersect;
         }
         $organizeFilter .= "(";
+        $i = count($cols);
+        reset($searchWords);
+        reset($cols);
         foreach ($cols as $col) {
-            $organizeFilter .= filterClauseOrganizer($col, $comOperator, $searchWords);
-            if ($col !== end($cols)) {
-                $organizeFilter .= "OR" .
-                    " ";
+            $i--;
+            debug('$col', $col);
+            debug('$searchWords', $searchWords);
+            // TODO handle 'in' clause
+            $organizeFilter .= filterClauseOrganizer($col, $comOperator, current($searchWords));
+            debug('$organizeFilter', $organizeFilter);
+            debug('$logOperator', $logOperator);
+            if ($i > 0) {
+                $organizeFilter .= $logOperator . " ";
+                $logOperator = next($logOperators) ?? 'OR';
+                debug('next $logOperator', $logOperator);
+            } else {
+                debug ('last inner condition', $logOperators);
             }
+            next($searchWords);
         }
         $organizeFilter .= ") ";
 
 
-        if ($slice !== end($slices)) {
+        if ($i_slice > 0) {
             if (empty($logOperator)) {
                 $logOperator = "OR";
             }
-            $organizeFilter .= $logOperator .
-                " ";
+            debug('$logOperator', $logOperator);
+            $organizeFilter .= $logOperator . " ";
         }
     }
+    debug('build filter', $organizeFilter);
     return $organizeFilter;
 }
 
@@ -288,6 +320,7 @@ function returnInfo($data, $sql, $connect): array
 
 function debug(...$msg)
 {
+    return;
     $prefix = '[debug] ';
     if (function_exists("xdebug_call_function")) {
         $prefix = sprintf("[%s-%s:%d] ", xdebug_call_file(), xdebug_call_function(), xdebug_call_line());
@@ -303,13 +336,13 @@ function debug(...$msg)
                 error_log($prefix . '(' . gettype($s) . ') ' . print_r($s, true));
                 break;
             case "boolean":
-                error_log($prefix. $s ? 'true' : 'false');
+                error_log($prefix . $s ? 'true' : 'false');
                 break;
             case "NULL":
                 error_log($prefix . "(null)");
                 break;
             default:
-                error_log($prefix . '('.gettype($s).') '. $s);
+                error_log($prefix . '(' . gettype($s) . ') ' . $s);
                 break;
         }
         $i++;

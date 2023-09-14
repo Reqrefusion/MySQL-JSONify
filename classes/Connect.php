@@ -39,6 +39,7 @@ class Connect
     public
     function startResponse($data, $sql)
     {
+        if (!is_object($data)) return;
         // Based on method, do GET, POST, PUT, DELETE
         switch ($data->method) {
             case 'GET':

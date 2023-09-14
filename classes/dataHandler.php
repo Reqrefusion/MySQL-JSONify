@@ -50,6 +50,9 @@ class DataHandler
         $this->path = basename(parse_url($url, PHP_URL_PATH));
         $this->validPaths = array_keys($obj["paths"]);
         $this->method = $_SERVER['REQUEST_METHOD'];
+        if (strtolower($this->method) == "options")
+            throw new Exception('OPTIONS request unsupported');
+        debug($this->method . ' ' . $url);
         $this->serverKey = $obj["serverKey"];
         if (array_key_exists('login', $obj))
             $this->login = $obj["login"];

@@ -5,6 +5,6 @@ global $connect, $data, $sql;
 header('Content-Type: application/json');
 //------------------------------------------------------------------------------
 
-include ('config.php');
+include('config.php');
 
 echo $connect->startResponse($data, $sql);
