@@ -1,4 +1,5 @@
 <?php
+require(__DIR__ . '/../headerToken.php');
 
 class DataHandler
 {
@@ -24,6 +25,8 @@ class DataHandler
      * @var mixed
      */
     public $serverKey;
+    public $privateKey;
+    public $publicKey;
     /**
      * @var mixed
      */
@@ -54,6 +57,8 @@ class DataHandler
             throw new Exception('OPTIONS request unsupported');
         debug($this->method . ' ' . $url);
         $this->serverKey = $obj["serverKey"];
+        if (array_key_exists('headerPrivateToken', $obj))
+            $this->privateKey = $obj['headerPrivateToken'];
         if (array_key_exists('login', $obj))
             $this->login = $obj["login"];
         else
@@ -140,6 +145,15 @@ class DataHandler
                 $this->loginInfo['login']['error'] = $e->getMessage();
             }
             //return $connect -> jsonResponse($sql -> sql['GET'], $data -> sqlParams, returnInfo($data, $sql, $this), $data);
+        }
+        if (!empty($this->headerName)) {
+            debug('HeaderToken verification');
+            // a hash is provided into header
+            $ht = new HeaderToken();
+            if (!$ht->verifyToken(@$_SERVER[$this->publicKey], @$_SERVER[$this->privateKey], $this->serverKey)) {
+                $this->statementPass = false;
+                $this->loginInfo['login']['error'] = 'invalid token';
+            }
         }
     }
 
