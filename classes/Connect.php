@@ -43,6 +43,9 @@ class Connect
         // Based on method, do GET, POST, PUT, DELETE
         switch ($data->method) {
             case 'GET':
+                if (!$data->statementPass) {
+                    return json_encode(array('info' => $data->loginInfo['login']['error']));
+                }
                 return $this->jsonResponse($sql->sql, $data->sqlParams, returnInfo($data, $sql, $this), $data);
             case 'POST':
                 if ($data->params["statement"] and $data->params["statement"] === "login"
@@ -73,7 +76,7 @@ class Connect
                 // error_log($this->connectInfo['executeStatus']);
                 return $this->jsonResponse("SELECT * FROM `$data->table` WHERE $data->idCol=" . end($data->putParams));
             case 'DELETE':
-                error_log(print_r($data->sqlParams, true));
+                debug(print_r($data->sqlParams, true));
                 $this->execute($sql->sql, $data->sqlParams);
                 return $this->jsonResponse("SELECT * FROM `$data->table`");
         }

@@ -59,6 +59,8 @@ class DataHandler
         $this->serverKey = $obj["serverKey"];
         if (array_key_exists('headerPrivateToken', $obj))
             $this->privateKey = $obj['headerPrivateToken'];
+        if (array_key_exists('headerPublicToken', $obj))
+            $this->publicKey = $obj['headerPublicToken'];
         if (array_key_exists('login', $obj))
             $this->login = $obj["login"];
         else
@@ -128,13 +130,6 @@ class DataHandler
                 $this->loginInfo['login'] = JWT::decode($this->params["token"], $this->serverKey, array('HS256'));
 
                 if (is_null(@$this->tableProperty[$this->params["statement"]]) or $this->tableProperty[$this->params["statement"]] >= $this->loginInfo['login']->authorityLevel) {
-                    //$connect -> execute($sql -> sql['POST']);
-                    //For the update process
-                    /*
-                        if (isset($this -> params["statement"]) and $this -> params["statement"] === "update" and isset($this -> posts[$this -> idCol])) {
-
-                        }
-                        */
                     $this->statementPass = true;
                 } else {
                     $this->statementPass = false;
@@ -144,16 +139,27 @@ class DataHandler
                 $this->statementPass = false;
                 $this->loginInfo['login']['error'] = $e->getMessage();
             }
-            //return $connect -> jsonResponse($sql -> sql['GET'], $data -> sqlParams, returnInfo($data, $sql, $this), $data);
-        }
-        if (!empty($this->headerName)) {
+        } else
+            $this->statementPass = true;
+
+        if (!empty($this->privateKey)) {
             debug('HeaderToken verification');
             // a hash is provided into header
             $ht = new HeaderToken();
-            if (!$ht->verifyToken(@$_SERVER[$this->publicKey], @$_SERVER[$this->privateKey], $this->serverKey)) {
+            if (array_key_exists($this->publicKey, $_SERVER) && array_key_exists($this->privateKey, $_SERVER)) {
+                if (!$ht->verifyToken(@$_SERVER[$this->publicKey], @$_SERVER[$this->privateKey], $this->serverKey)) {
+                    $this->statementPass = false;
+                    $this->loginInfo['login']['error'] = 'invalid token';
+                } else
+                    $this->statementPass = true;
+            } else {
+                debug('$_SERVER', $_SERVER);
                 $this->statementPass = false;
-                $this->loginInfo['login']['error'] = 'invalid token';
+                $this->loginInfo['login']['error'] = 'missing token';
             }
+        } else {
+            debug('no header token verification');
+            $this->statementPass = true;
         }
     }
 
