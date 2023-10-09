@@ -83,7 +83,7 @@ function sqlStringEscaper($value)
 }
 
 //To avoid injections that can be made for the query
-function firsNumberFinder($value): string
+function firstNumberFinder($value): string
 {
     preg_match_all('!\d+!', $value, $matches);
     return $matches[0][0];

@@ -1,5 +1,6 @@
 <?php
 require(__DIR__ . '/Base62.php');
+
 class headerToken
 {
     public function verifyToken(string $public, string $providedToken, string $secretKey): bool
@@ -15,5 +16,10 @@ class headerToken
             debug("hash given    => " . $providedToken);
         }
         return false;
+    }
+
+    public function mkToken(string $public, string $secretKey): string
+    {
+        return Base62::encode(hash_hmac('md5', $public . ':', $secretKey));
     }
 }

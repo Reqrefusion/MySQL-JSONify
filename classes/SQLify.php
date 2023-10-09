@@ -63,8 +63,16 @@ class SQLify
     public
     function deleteSQL($data): string
     {
+        $params = $data->params;
         debug("DELETE FROM `$data->table` WHERE $data->idCol = :", $data->idCol);
-        return "DELETE FROM `$data->table` WHERE $data->idCol = :" . $data->idCol;
+        $filter = "";
+        if ($params["filter"]) {
+            $filter = " WHERE " . filterOrganizer($params["filter"], $data->tableRows);
+        }
+        if (empty($filter))
+            return "DELETE FROM `$data->table` WHERE $data->idCol = :" . $data->idCol;
+        else
+            return "DELETE FROM `$data->table` " . $filter;
     }
 
     // Create statement and return it
@@ -75,7 +83,7 @@ class SQLify
         // If parameter exists, then make string else empty
         $id = "";
         if ($params["id"]) {
-            $id = "WHERE $data->idCol = " . firsNumberFinder($params["id"]);
+            $id = "WHERE $data->idCol = " . firstNumberFinder($params["id"]);
         }
         //Select if
         $select = $this->select;

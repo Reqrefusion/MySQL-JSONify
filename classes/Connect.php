@@ -64,8 +64,10 @@ class Connect
                     $this->execute($sql->sql['POST']);
                     if (isset($this->connectInfo['lastInsertId']))
                         return $this->jsonResponse("SELECT * FROM `$data->table` WHERE $data->idCol=" . $this->connectInfo['lastInsertId']);
-                    else
+                    else {
+                        debug('last insert: ', $this->connectInfo);
                         return $this->jsonResponse("SELECT NOW()");
+                    }
                 }
                 break;
             case 'PUT':

@@ -40,6 +40,10 @@ class DataHandler
      * @var true
      */
     public bool $external_auth = false;
+    /**
+     * @var mixed
+     */
+    private $bypassHeaderWithHeader = null;
 
 
     /**
@@ -142,7 +146,7 @@ class DataHandler
         } else
             $this->statementPass = true;
 
-        if (!empty($this->privateKey)) {
+        if (!empty($this->privateKey) && (empty($_SERVER['AUTH_TYPE']) || empty($_SERVER['REMOTE_USER']))) {
             debug('HeaderToken verification');
             // a hash is provided into header
             $ht = new HeaderToken();
