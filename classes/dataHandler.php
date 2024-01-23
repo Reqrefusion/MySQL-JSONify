@@ -58,7 +58,7 @@ class DataHandler
         $this->validPaths = array_keys($obj["paths"]);
         $this->method = $_SERVER['REQUEST_METHOD'];
         if (strtolower($this->method) == "options")
-            throw new Exception('OPTIONS request unsupported');
+            throw new Exception('OPTIONS request unsupported', 1001);
         debug($this->method . ' ' . $url);
         $this->serverKey = $obj["serverKey"];
         if (array_key_exists('headerPrivateToken', $obj))

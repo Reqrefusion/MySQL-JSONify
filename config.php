@@ -18,5 +18,6 @@ try {
 
     $data->controlParams();
 } catch (Exception $e) {
-    error_log($e->getMessage());
+    if ($e->getCode() != 1001)
+        error_log($e->getMessage());
 }

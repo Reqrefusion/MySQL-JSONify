@@ -80,7 +80,11 @@ class Connect
             case 'DELETE':
                 debug(print_r($data->sqlParams, true));
                 $this->execute($sql->sql, $data->sqlParams);
-                return $this->jsonResponse("SELECT * FROM `$data->table`");
+                if ("Successful" !== $this->connectInfo['executeStatus']) {
+                    http_response_code(599 /* custom */);
+                    return json_encode(array('info' => $this->connectInfo));
+                } else
+                    return $this->jsonResponse("SELECT * FROM `$data->table`");
         }
     }
 
@@ -104,7 +108,9 @@ class Connect
                 $this->connectInfo['executeStatus'] = $stmt->errorCode();
             }
         } catch (PDOException $e) {
-            $this->connectInfo['executeStatus'] = $e->getMessage();
+            debug('Exception SQL', $e->getMessage());
+            $this->connectInfo['executeStatus'] = 'Error';
+            $this->connectInfo['executeMessage'] = $e->getMessage();
         } catch (Exception $e) {
             $this->connectInfo['executeStatus'] = $e->getMessage();
         }

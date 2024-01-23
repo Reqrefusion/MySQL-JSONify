@@ -320,7 +320,8 @@ function returnInfo($data, $sql, $connect): array
 
 function debug(...$msg)
 {
-    return;
+    if (!file_exists(__DIR__ . '/../.debug'))
+        return;
     $prefix = '[debug] ';
     if (function_exists("xdebug_call_function")) {
         $prefix = sprintf("[%s-%s:%d] ", xdebug_call_file(), xdebug_call_function(), xdebug_call_line());
