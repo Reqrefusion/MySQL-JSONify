@@ -178,7 +178,7 @@ function filterClauseOrganizer($col, $comOperator, $search): string
 
 function filterOrganizer($filter, $tableRows): string
 {
-    $comOperatorsArray = array("lk", "nlk", "cs", "sw", "ew", "eq", "lt", "le", "ge", "gt", "bt", "in", "is");
+    $comOperatorsArray = array("lk", "nlk", "cs", "sw", "ew", "eq", "lt", "le", "ge", "gt", "bt", "in", "is", "nin" /* not in */);
     $logOperatorsArray = array("AND", "OR", "||", "&&", "XOR");
     $slices = explode(";", $filter);
     debug("filters (slices)", $slices);
@@ -219,8 +219,10 @@ function filterOrganizer($filter, $tableRows): string
             $i--;
             debug('$col', $col);
             debug('$searchWords', $searchWords);
-            // TODO handle 'in' clause
-            $organizeFilter .= filterClauseOrganizer($col, $comOperator, current($searchWords));
+            if ($comOperator == 'in' || $comOperator == 'nin')
+                $organizeFilter .= filterClauseOrganizer($col, $comOperator, $searchWords);
+            else
+                $organizeFilter .= filterClauseOrganizer($col, $comOperator, current($searchWords));
             debug('$organizeFilter', $organizeFilter);
             debug('$logOperator', $logOperator);
             if ($i > 0) {
@@ -228,7 +230,7 @@ function filterOrganizer($filter, $tableRows): string
                 $logOperator = next($logOperators) ?? 'OR';
                 debug('next $logOperator', $logOperator);
             } else {
-                debug ('last inner condition', $logOperators);
+                debug('last inner condition', $logOperators);
             }
             next($searchWords);
         }

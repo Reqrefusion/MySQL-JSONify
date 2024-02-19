@@ -51,12 +51,24 @@ class SQLify
     function putSQL($data): string
     {
         // error_log('data->posts => ' . print_r($data->posts, true));
+        $filter = "";
+        $params = $data->params;
+        if ($params["filter"]) {
+            $filter = " WHERE " . filterOrganizer($params["filter"], $data->tableRows);
+        }
         $set = arrayKeyRemove(array_keys($data->posts), $data->idCol);
+        debug(print_r($data, true));
         $set = join(', ', array_map(function ($v) {
                 return "`$v` = ?";
-            }, $set)) .
-            " WHERE $data->idCol = ?";
+            }, $set));
+        debug($set);
+        if (empty($filter))
+            $set .= " WHERE $data->idCol = ?";
+        else
+            $set .= $filter;
         // error_log('PutSQL: ' . $set);
+        debug('data->posts => ' . print_r($data->posts, true));
+        debug($set);
         return "UPDATE `$data->table` SET $set";
     }
 

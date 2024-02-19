@@ -52,8 +52,13 @@ class DataHandler
     public
     function __construct($obj, $connect)
     {
+        $url = '';
+        if (array_key_exists('HTTPS', $_SERVER) && strtolower($_SERVER['HTTPS']) == 'on')
+            $url = "https://";
+        else
+            $url = "http://";
         // Get the full URL and Valid paths and Method, such as POST, GET, PUT, DELETE
-        $url = "http://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+        $url .= $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
         $this->path = basename(parse_url($url, PHP_URL_PATH));
         $this->validPaths = array_keys($obj["paths"]);
         $this->method = $_SERVER['REQUEST_METHOD'];
@@ -69,7 +74,7 @@ class DataHandler
             $this->login = $obj["login"];
         else
             $this->external_auth = true;
-        if (@$_SERVER['CONTENT_TYPE'] == 'application/json') {
+        if (strtolower(@$_SERVER['CONTENT_TYPE']) == 'application/json') {
             // read and decode json data
             $json = file_get_contents('php://input');
             // Converts it into a PHP object
@@ -103,8 +108,8 @@ class DataHandler
         $this->params = array_combine($this->validParams, array_map("getGet", $this->validParams));
         // Get posts, Only receives data sent
         $this->posts = array_combine($this->tableRows, array_map("getPOST", $this->tableRows));
-        if (strtolower($this->method) == 'post') {
-            debug('$this->posts', $this->posts);
+        if (strtolower($this->method) == 'post' || strtolower($this->method) == 'put') {
+            debug('$this->' . strtolower($this->method), $this->posts);
         }
 
         // Get paths based on colum names and move id last ALWAYS.
