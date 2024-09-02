@@ -12,7 +12,12 @@ $obj = (include 'details.php');
 
 // create all classes
 $connect = new Connect($obj["database"]);
-$data = new DataHandler($obj, $connect);
-$sql = new SQLify($data);
+try {
+    $data = new DataHandler($obj, $connect);
+    $sql = new SQLify($data);
 
-$data->controlParams();
+    $data->controlParams();
+} catch (Exception $e) {
+    if ($e->getCode() != 1001)
+        error_log($e->getMessage());
+}
